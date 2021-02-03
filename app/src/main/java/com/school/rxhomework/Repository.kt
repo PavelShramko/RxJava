@@ -15,6 +15,7 @@ object Repository {
     object NetworkSource {
         private interface IPostApi {
             @GET("/posts")
+            // обзервер поменять
             fun getPosts(): Observable<retrofit2.Response<List<MainActivity.Adapter.Item>>>
         }
 
