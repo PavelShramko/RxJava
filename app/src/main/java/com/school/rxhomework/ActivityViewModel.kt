@@ -3,18 +3,12 @@ package com.school.rxhomework
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
-import io.reactivex.rxjava3.disposables.CompositeDisposable
-import io.reactivex.rxjava3.disposables.Disposable
-import io.reactivex.rxjava3.schedulers.Schedulers
-import io.reactivex.rxjava3.subjects.ReplaySubject
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 
 class ActivityViewModel : ViewModel() {
-
-    private val disposeBag = CompositeDisposable()
-
-    private val getPost = ReplaySubject.create<List<MainActivity.Adapter.Item>>()
 
     private val _state = MutableLiveData<State>(State.Loading)
     val state: LiveData<State>
@@ -22,38 +16,20 @@ class ActivityViewModel : ViewModel() {
 
     init {
         refreshData()
-        getPost.subscribe{
-            _state.value = State.Loaded(it)
-        }
     }
 
-    private fun refreshData() {
-        val result: Disposable = Repository.getPosts()
-                .subscribeOn(Schedulers.newThread())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe ({
-                    response ->
-                    if (response.isSuccessful) {
-                        response.body()?.let { getPost.onNext(it) }
-                    } else {
-                        getPost.onNext(emptyList())
-                    }
-                },{
-                    getPost.onNext(emptyList())
-                })
-
-        disposeBag.add(result)
-    }
-
-    fun unsubscribe(){
-        if(disposeBag != null){
-            disposeBag.dispose()
-        }
-    }
-
-    fun processAction(action: Action) {
-        when (action) {
-            Action.RefreshData -> refreshData()
+    fun refreshData() {
+        viewModelScope.launch(Dispatchers.IO){
+            try {
+                val result = Repository.getPosts()
+                if (result.isSuccessful) {
+                    result.body()?.let { _state.postValue(State.Loaded(it)) }
+                } else{
+                    _state.postValue(State.Loaded(emptyList()))
+                }
+            } catch (e: Exception){
+                _state.postValue(State.Loaded(emptyList()))
+            }
         }
     }
 }
