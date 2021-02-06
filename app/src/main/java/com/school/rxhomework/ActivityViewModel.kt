@@ -24,9 +24,9 @@ class ActivityViewModel : ViewModel() {
                 val result = Repository.getPosts()
                 if (result.isSuccessful) {
                     result.body()?.let { _state.postValue(State.Loaded(it)) }
-                } else{
-                    _state.postValue(State.Loaded(emptyList()))
                 }
+
+                // Может ли значение быть не isSuccessful
             } catch (e: Exception){
                 _state.postValue(State.Loaded(emptyList()))
             }
